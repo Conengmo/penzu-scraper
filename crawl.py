@@ -17,28 +17,40 @@ driver.get(magic_link)
 
 time.sleep(4)
 
-url_pattern = "https://penzu.com/journals/{}/entries?page={}"
-urls_to_visit = []
-for i in range(1, 15):
-    url = url_pattern.format(user_id, i)
-    driver.get(url)
-    time.sleep(2)
-    elements = driver.find_elements(By.CSS_SELECTOR, 'a.ng-scope')
-    urls_to_visit.extend(
-        [e.get_attribute('href').strip() for e in elements]
-    )
 
-with open("urls.txt", "w") as f:
-    for url in urls_to_visit:
-        print(url, file=f)
+if os.path.exists("urls.txt"):
+    with open("urls.txt", "r") as f:
+        urls_to_visit = [url.strip() for url in f]
+else:
+    url_pattern = "https://penzu.com/journals/{}/entries?page={}"
+    urls_to_visit = []
+    i = 1
+    while True:
+        url = url_pattern.format(user_id, i)
+        driver.get(url)
+        time.sleep(2)
+        elements = driver.find_elements(By.CSS_SELECTOR, 'a.ng-scope')
+        _urls = [e.get_attribute('href').strip() for e in elements]
+        if not _urls:
+            break
 
+        urls_to_visit.extend(_urls)
+        i += 1
 
-with open("urls.txt", "r") as f:
-    urls_to_visit = [url.strip() for url in f]
+    print(f"Found {len(urls_to_visit)} urls")
+
+    with open("urls.txt", "w") as f:
+        for url in urls_to_visit:
+            print(url, file=f)
+
 
 os.makedirs("htmls", exist_ok=True)
 
 for i, url in enumerate(urls_to_visit):
+    if not os.path.exists(f"htmls/{i}.html"):
+        print(f"Skipping existing file {i}.html")
+        continue
+
     driver.get(url)
 
     time.sleep(4)
